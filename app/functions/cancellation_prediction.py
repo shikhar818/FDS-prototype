@@ -5,6 +5,7 @@ from tabpfn.model_loading import load_fitted_tabpfn_model
 import pandas as pd
 import numpy as np
 from sklearn.metrics import classification_report
+from app.functions import prepare_classification
 
 load_dotenv("app/.env")
 MODEL_PATH = os.getenv("CLASSIFICATION_MODEL")
@@ -20,10 +21,11 @@ def load_cancellation_model():
 
 cancellation_model = load_cancellation_model()
 
-def predict_cancellation(df):
-    predictions = cancellation_model.predict(df)
+def predict_cancellation(df,predicted_revenue) -> np.ndarray:
+    input_df=prepare_classification(df,predicted_revenue)
+    predictions = cancellation_model.predict(input_df)
     predictions = np.asarray(predictions).reshape(-1)
-    return predictions
+    return predictions.astype(int)
 
 # test = pd.read_csv(
 #     r"X_test.csv",

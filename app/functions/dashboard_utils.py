@@ -173,8 +173,6 @@ def generate_dashboard(df):
         "high_value_bookings": records(
             high_value_bookings
         ),
-
-        "predictions": records(df)
     }
     
 ## Test Code Success 

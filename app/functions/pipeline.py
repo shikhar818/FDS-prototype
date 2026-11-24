@@ -43,11 +43,11 @@ def run_prediction_pipeline(
     return result_df
 
 
-if __name__=="__main__":
-    start = time.perf_counter()
-    df = pd.read_csv("app/functions/X_test.csv")
-    print(run_prediction_pipeline(df))
-    end = time.perf_counter()
-    time_taken = end - start 
-    print(time_taken)
+#if __name__=="__main__":
+#    start = time.perf_counter()
+#    df = pd.read_csv("app/functions/X_test.csv")
+#    print(run_prediction_pipeline(df))
+#    end = time.perf_counter()
+#    time_taken = end - start 
+#    print(time_taken)
     

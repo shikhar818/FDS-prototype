@@ -1,7 +1,7 @@
 
 import pandas as pd
-from revenue_prediction import predict_revenue
-from cancellation_prediction import predict_cancellation
+from app.functions.revenue_prediction import predict_revenue
+from app.functions.cancellation_prediction import predict_cancellation
 import time 
 
 

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware 
 from .routes.home import router as home_router
+from .routes.prediction import router as prediction_router
 from logs.middleware_logs import log_requests 
 app = FastAPI()
 
@@ -19,3 +20,4 @@ app.middleware("http")(log_requests)
 
 
 app.include_router(home_router)
+app.include_router(prediction_router)

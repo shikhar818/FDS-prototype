@@ -5,7 +5,7 @@ from tabpfn.model_loading import load_fitted_tabpfn_model
 from dotenv import load_dotenv 
 import os 
 
-load_dotenv()
+load_dotenv("app/.env")
 MODEL_PATH = os.getenv("REVENUE_MODEL")
 
 def load_revenue_model():

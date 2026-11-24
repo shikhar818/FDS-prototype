@@ -4,7 +4,7 @@ from fastapi import (
     UploadFile,
     File
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse,JSONResponse
 from pydantic import BaseModel
 from typing import Any
 from pathlib import Path
@@ -12,7 +12,7 @@ from io import BytesIO
 import pandas as pd
 import uuid
 from app.functions.pipeline import run_prediction_pipeline
-
+from app.functions.dashboard_utils import generate_dashboard
 
 router = APIRouter(tags=["Prediction"])
 
@@ -48,10 +48,14 @@ async def predict_batch(
             output_path,
             index=False
         )
-        return FileResponse(
-            path=output_path,
-            media_type="text/csv",
-            filename=filename
+        dashboard_data = generate_dashboard(result_df)
+
+        return JSONResponse(
+            content={
+                "status": "success",
+                "filename": filename,
+                **dashboard_data
+            }
         )
     except HTTPException:
         raise

@@ -3,3 +3,7 @@ uvicorn[standard]>=0.28.0
 tabpfn
 scikit-learn==1.6.1
 python-multipart
+jinja2
+streamlit
+requests
+plotly

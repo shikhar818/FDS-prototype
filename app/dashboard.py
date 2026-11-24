@@ -48,7 +48,7 @@ def style(fig: go.Figure, height: int = 360) -> go.Figure:
 
 def call_api(file) -> dict:
     files = {"file": (file.name, file.getvalue(), "text/csv")}
-    r = requests.post(API_URL, files=files, timeout=300)
+    r = requests.post(API_URL, files=files, timeout=1200)
     r.raise_for_status()
     return r.json()
 

@@ -9,14 +9,14 @@ def evaluate_segments(df,group_col):
         total_bookings=("predicted_cancellation","count"),
         canceled_bookings=("predicted_cancellation","sum"),
         total_revenue=("predicted_revenue","sum"),
-        lost_revenue=('retained_revenue',"sum"),
+        lost_revenue=('revenue_loss',"sum"),
         retained_revenue=("retained_revenue","sum"),
         average_booking_value=("predicted_revenue", "mean")
     ).reset_index()
 
-    summary["retained_bookings"]=(summary["total_bookings"]- summary["canceled_bookings"])
-    summary["cancellation_rate"]=(summary["canceled_bookings"]- summary["total_bookings"])
-    summary["revenue_loss_pct"]=(summary["lost_revenue"]- summary["total_revenue"].replace(0, float("nan"))*100)
+    summary["retained_bookings"]=(summary["total_bookings"]-summary["canceled_bookings"])
+    summary["cancellation_rate"]=(summary["canceled_bookings"]/summary["total_bookings"]*100)
+    summary["revenue_loss_pct"]=(summary["lost_revenue"]/summary["total_revenue"].replace(0, float("nan"))*100)
     return records(summary)
 
 def generate_dashboard(df):
@@ -149,7 +149,7 @@ def generate_dashboard(df):
                 {
                     "category": "Retained Revenue",
                     "measure": "total",
-                    "value": 0
+                    "value": round(retained_revenue, 2)
                 }
             ],
 

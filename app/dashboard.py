@@ -2,6 +2,7 @@ import json
 
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import requests
 import streamlit as st
 
@@ -100,7 +101,7 @@ c5, c6, _, _ = st.columns(4)
 c5.metric("Total potential revenue", money(s["total_revenue"]))
 c6.metric("Retained revenue", money(s["retained_revenue"]))
 
-tab_overview, tab_segments, tab_bookings = st.tabs(["Overview", "Channels and segments", "High-value bookings"])
+tab_overview, tab_segments, tab_monthly = st.tabs(["Overview", "Channels and segments", "Monthly trend"])
 
 # ---------- Overview ----------
 with tab_overview:
@@ -229,40 +230,62 @@ with tab_segments:
     st.caption("Segments are numeric codes in the API output; map them to names if you have the encoding.")
     breakdown(charts["market_segment"], "marketsegment", "segment", prefix="Segment ")
 
-# ---------- High-value bookings ----------
-with tab_bookings:
-    hv = pd.DataFrame(result.get("high_value_bookings", []))
-    if hv.empty:
-        st.info("No high-value bookings returned.")
+# ---------- Monthly trend ----------
+with tab_monthly:
+    monthly = pd.DataFrame(charts.get("monthly_revenue", []))
+    if monthly.empty:
+        st.info("The API response has no charts.monthly_revenue key yet. Add it on the backend.")
     else:
-        f1, f2 = st.columns([1, 3])
-        with f1:
-            outcome = st.radio("Outcome", ["All", "Canceled", "Retained"], horizontal=False)
-        if outcome != "All":
-            hv = hv[hv["cancellation_status"] == outcome]
-
-        hv_top = hv.sort_values("predicted_revenue", ascending=False)
-        with f2:
-            fig = go.Figure(
-                go.Bar(
-                    x=hv_top["predicted_revenue"],
-                    y=[f"#{i + 1} | {r.country} | {r.totalnights}n" for i, r in enumerate(hv_top.itertuples())],
-                    orientation="h",
-                    marker_color=[CANCELED if x == "Canceled" else RETAINED for x in hv_top["cancellation_status"]],
-                )
-            )
-            fig.update_layout(title="Top bookings by predicted revenue", yaxis=dict(autorange="reversed"))
-            st.plotly_chart(style(fig, 380), use_container_width=True)
-
-        cols = [
-            "predicted_revenue", "cancellation_status", "country", "distributionchannel",
-            "marketsegment", "reservedroomtype", "totalnights", "totalguests", "leadtime",
-            "deposittype", "customertype", "reservationdate", "arrivalmonth", "arrivaldateyear",
-        ]
-        st.dataframe(
-            hv_top[[c for c in cols if c in hv_top.columns]].style.format({"predicted_revenue": "{:,.2f}"}),
-            use_container_width=True, hide_index=True,
+        monthly["period"] = pd.to_datetime(
+            dict(year=monthly["arrivaldateyear"], month=monthly["arrivalmonth"], day=1)
         )
+        monthly = monthly.sort_values("period")
+
+        peak_rev = monthly.loc[monthly["retained_revenue"].idxmax()]
+        peak_can = monthly.loc[monthly["cancellation_rate"].idxmax()]
+        m1, m2 = st.columns(2)
+        m1.metric("Peak revenue month", f"{peak_rev['period']:%b %Y}", money(peak_rev["retained_revenue"]), delta_color="off")
+        m2.metric("Peak cancellation month", f"{peak_can['period']:%b %Y}", f"{peak_can['cancellation_rate']:.2f}%", delta_color="off")
+
+        fig = make_subplots(
+            rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1, row_heights=[0.6, 0.4],
+            subplot_titles=("Predicted booking revenue by arrival month", "Cancellation rate by arrival month"),
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=monthly["period"], y=monthly["retained_revenue"], mode="lines+markers",
+                name="Expected revenue", line=dict(color=RETAINED, width=2.5),
+                hovertemplate="%{x|%b %Y}<br>Expected revenue: %{y:,.0f}<extra></extra>",
+            ),
+            row=1, col=1,
+        )
+        if "lost_revenue" in monthly.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=monthly["period"], y=monthly["lost_revenue"], mode="lines+markers",
+                    name="Revenue lost to cancellations", line=dict(color=CANCELED, width=2, dash="dot"),
+                    hovertemplate="%{x|%b %Y}<br>Lost revenue: %{y:,.0f}<extra></extra>",
+                ),
+                row=1, col=1,
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=monthly["period"], y=monthly["cancellation_rate"], mode="lines+markers",
+                name="Cancellation rate %", line=dict(color=CANCELED, width=2.5),
+                hovertemplate="%{x|%b %Y}<br>Cancellation rate: %{y:.2f}%<extra></extra>",
+            ),
+            row=2, col=1,
+        )
+        fig.update_xaxes(tickformat="%b %Y", dtick="M1", tickangle=-45)
+        fig.update_yaxes(title_text="Revenue", row=1, col=1)
+        fig.update_yaxes(title_text="Cancellation rate (%)", row=2, col=1)
+        st.plotly_chart(style(fig, 620), use_container_width=True)
+
+        with st.expander("Monthly data"):
+            st.dataframe(
+                monthly.drop(columns=["period"]),
+                use_container_width=True, hide_index=True,
+            )
 
 st.sidebar.divider()
 st.sidebar.download_button(

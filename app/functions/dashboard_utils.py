@@ -167,7 +167,10 @@ def generate_dashboard(df):
 
             "market_segment": evaluate_segments(
                 df, "marketsegment"
-            )
+            ),
+            "monthly_revenue": evaluate_segments(
+                df, ["arrivaldateyear", "arrivalmonth"]
+            ),
         },
 
         "high_value_bookings": records(

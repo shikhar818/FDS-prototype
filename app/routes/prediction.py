@@ -13,6 +13,8 @@ import pandas as pd
 import uuid
 from app.functions.pipeline import run_prediction_pipeline
 from app.functions.dashboard_utils import generate_dashboard
+import time 
+
 
 router = APIRouter(tags=["Prediction"])
 
@@ -36,6 +38,7 @@ async def predict_batch(
             raise HTTPException(
                 status_code=400,
                 detail="Uploaded CSV contains no records.")
+        start_time = time.perf_counter()
         result_df = run_prediction_pipeline(
             booking_df)
         output_dir=Path("outputs")
@@ -49,11 +52,14 @@ async def predict_batch(
             index=False
         )
         dashboard_data = generate_dashboard(result_df)
+        runtime = time.perf_counter() - start_time
+        print(runtime)
 
         return JSONResponse(
             content={
                 "status": "success",
                 "filename": filename,
+                "runtime":runtime,
                 **dashboard_data
             }
         )

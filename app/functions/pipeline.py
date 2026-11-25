@@ -3,6 +3,7 @@ import pandas as pd
 from app.functions.revenue_prediction import predict_revenue
 from app.functions.cancellation_prediction import predict_cancellation
 import time 
+import tracemalloc 
 
 
 def run_prediction_pipeline(
@@ -11,7 +12,10 @@ def run_prediction_pipeline(
 
     if booking_df.empty:
         raise ValueError("Input CSV contains no bookings.")
-
+    
+    
+    tracemalloc.start()
+    start_time = time.perf_counter()
     # Preserve original booking data
     result_df = booking_df.copy()
 
@@ -24,6 +28,24 @@ def run_prediction_pipeline(
     predicted_cancellation = predict_cancellation(
         booking_df
     )
+    
+    inference_time = time.perf_counter() - start_time 
+    current_memory,peak_memory = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    peak_memory_mb = peak_memory / (1024 ** 2)
+
+    throughput = (
+        len(booking_df) / inference_time
+        if inference_time > 0 else 0
+    )
+    
+    performance = {
+        "inference_time_seconds": round(inference_time, 6),
+        "peak_memory_mb": round(peak_memory_mb, 2),
+        "throughput_rows_per_second": round(throughput, 2)
+    }
+    
+    print(performance)
 
 
     result_df["predicted_revenue"] = predicted_revenue

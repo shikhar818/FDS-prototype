@@ -30,8 +30,18 @@ st.markdown(
 
 
 # ---------- helpers ----------
+SEGMENT_MAP = {
+    3: "Direct",
+    5: "Corporate",
+    1: "Online TA",
+    2: "Offline TA/TO",
+    4: "Groups",
+    7: "Aviation",
+}
+
+
 def money(x: float) -> str:
-    return f"{x:,.0f}"
+    return f"{x:,.0f} €"
 
 
 def style(fig: go.Figure, height: int = 360) -> go.Figure:
@@ -95,7 +105,7 @@ c1, c2, c3, c4 = st.columns(4)
 c1.metric("Total bookings", f"{s['total_bookings']:,}")
 c2.metric("Predicted cancellations", f"{s['canceled_bookings']:,}", f"{s['cancellation_rate']}% of bookings", delta_color="off")
 c3.metric("Revenue at risk", money(s["lost_revenue"]), f"{s['revenue_loss_percentage']}% of total", delta_color="off")
-c4.metric("Avg booking value", f"{s['average_booking_value']:,.2f}")
+c4.metric("Avg booking value", f"{s['average_booking_value']:,.2f} €")
 
 c5, c6, _, _ = st.columns(4)
 c5.metric("Total potential revenue", money(s["total_revenue"]))
@@ -126,6 +136,7 @@ with tab_overview:
                 labels=df["status"], values=df["revenue"], hole=0.55,
                 marker=dict(colors=[RETAINED if "Retained" in x else CANCELED for x in df["status"]]),
                 textinfo="label+percent",
+                hovertemplate="%{label}: %{value:,.0f} €<extra></extra>",
             )
         )
         fig.update_layout(title="Revenue distribution")
@@ -146,6 +157,7 @@ with tab_overview:
             )
         )
         fig.update_layout(title="Revenue waterfall", showlegend=False)
+        fig.update_yaxes(ticksuffix=" €")
         st.plotly_chart(style(fig), use_container_width=True)
 
     with right:
@@ -154,10 +166,11 @@ with tab_overview:
             go.Bar(
                 x=avg["cancellation_status"], y=avg["predicted_revenue"],
                 marker_color=[CANCELED if x == "Canceled" else RETAINED for x in avg["cancellation_status"]],
-                text=[f"{v:,.2f}" for v in avg["predicted_revenue"]], textposition="outside",
+                text=[f"{v:,.2f} €" for v in avg["predicted_revenue"]], textposition="outside",
             )
         )
         fig.update_layout(title="Average booking value by outcome", showlegend=False)
+        fig.update_yaxes(ticksuffix=" €")
         st.plotly_chart(style(fig), use_container_width=True)
 
     st.subheader("Revenue by outcome")
@@ -169,15 +182,18 @@ with tab_overview:
         }
     )
     st.dataframe(
-        cs.style.format({c: "{:,.2f}" for c in cs.columns if c not in ("Outcome", "Bookings")} | {"Bookings": "{:,}"}),
+        cs.style.format({c: "{:,.2f} €" for c in cs.columns if c not in ("Outcome", "Bookings")} | {"Bookings": "{:,}"}),
         use_container_width=True, hide_index=True,
     )
 
 
 # ---------- Channels and segments ----------
-def breakdown(rows: list, key: str, label: str, prefix: str = ""):
+def breakdown(rows: list, key: str, label: str, mapping: dict | None = None):
     df = pd.DataFrame(rows)
-    df[key] = prefix + df[key].astype(str)
+    if mapping:
+        df[key] = df[key].map(mapping).fillna(df[key].astype(str))
+    else:
+        df[key] = df[key].astype(str)
     df = df.sort_values("total_bookings", ascending=False)
 
     a, b = st.columns(2)
@@ -186,6 +202,7 @@ def breakdown(rows: list, key: str, label: str, prefix: str = ""):
         fig.add_bar(x=df[key], y=df["retained_revenue"], name="Retained", marker_color=RETAINED)
         fig.add_bar(x=df[key], y=df["lost_revenue"], name="Lost", marker_color=CANCELED)
         fig.update_layout(barmode="stack", title=f"Revenue by {label}")
+        fig.update_yaxes(ticksuffix=" €")
         st.plotly_chart(style(fig), use_container_width=True)
 
     with b:
@@ -214,8 +231,8 @@ def breakdown(rows: list, key: str, label: str, prefix: str = ""):
         show.style.format(
             {
                 "Bookings": "{:,}", "Canceled": "{:,}", "Retained": "{:,}",
-                "Total revenue": "{:,.0f}", "Lost revenue": "{:,.0f}", "Retained revenue": "{:,.0f}",
-                "Avg value": "{:,.2f}", "Cancel %": "{:.2f}", "Revenue loss %": "{:.2f}",
+                "Total revenue": "{:,.0f} €", "Lost revenue": "{:,.0f} €", "Retained revenue": "{:,.0f} €",
+                "Avg value": "{:,.2f} €", "Cancel %": "{:.2f}", "Revenue loss %": "{:.2f}",
             }
         ),
         use_container_width=True, hide_index=True,
@@ -227,8 +244,7 @@ with tab_segments:
     breakdown(charts["distribution_channel"], "distributionchannel", "channel")
     st.divider()
     st.subheader("Market segment")
-    st.caption("Segments are numeric codes in the API output; map them to names if you have the encoding.")
-    breakdown(charts["market_segment"], "marketsegment", "segment", prefix="Segment ")
+    breakdown(charts["market_segment"], "marketsegment", "segment", mapping=SEGMENT_MAP)
 
 # ---------- Monthly trend ----------
 with tab_monthly:
@@ -255,7 +271,7 @@ with tab_monthly:
             go.Scatter(
                 x=monthly["period"], y=monthly["retained_revenue"], mode="lines+markers",
                 name="Expected revenue", line=dict(color=RETAINED, width=2.5),
-                hovertemplate="%{x|%b %Y}<br>Expected revenue: %{y:,.0f}<extra></extra>",
+                hovertemplate="%{x|%b %Y}<br>Expected revenue: %{y:,.0f} €<extra></extra>",
             ),
             row=1, col=1,
         )
@@ -264,7 +280,7 @@ with tab_monthly:
                 go.Scatter(
                     x=monthly["period"], y=monthly["lost_revenue"], mode="lines+markers",
                     name="Revenue lost to cancellations", line=dict(color=CANCELED, width=2, dash="dot"),
-                    hovertemplate="%{x|%b %Y}<br>Lost revenue: %{y:,.0f}<extra></extra>",
+                    hovertemplate="%{x|%b %Y}<br>Lost revenue: %{y:,.0f} €<extra></extra>",
                 ),
                 row=1, col=1,
             )
@@ -277,7 +293,7 @@ with tab_monthly:
             row=2, col=1,
         )
         fig.update_xaxes(tickformat="%b %Y", dtick="M1", tickangle=-45)
-        fig.update_yaxes(title_text="Revenue", row=1, col=1)
+        fig.update_yaxes(title_text="Revenue (€)", ticksuffix=" €", row=1, col=1)
         fig.update_yaxes(title_text="Cancellation rate (%)", row=2, col=1)
         st.plotly_chart(style(fig, 620), use_container_width=True)
 

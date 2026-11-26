@@ -11,8 +11,10 @@ regarding bookings and their target customers
 ## Installation and Setup
 
 Follow the steps below to set up and run the project locally.
+Ensure Anaconda or Miniconda is installed before proceeding. Windows users can execute the following commands using Anaconda Prompt, while Linux users can use their standard terminal with Conda configured.
 
 ### 1. Create a Conda Environment
+
 
 Create a new Conda environment with Python 3.11:
 

@@ -10,11 +10,9 @@ regarding bookings and their target customers
 
 ## Installation and Setup
 
-Follow the steps below to set up and run the project locally.
-Ensure Anaconda or Miniconda is installed before proceeding. Windows users can execute the following commands using Anaconda Prompt, while Linux users can use their standard terminal with Conda configured.
+Follow the steps below to set up and run the project locally.  Ensure Anaconda or Miniconda is installed before proceeding. Windows users can execute the following commands using Anaconda Prompt, while Linux users can use their standard terminal with Conda configured.
 
 ### 1. Create a Conda Environment
-
 
 Create a new Conda environment with Python 3.11:
 
@@ -35,7 +33,7 @@ Install PyTorch inside the Conda environment.
 For CUDA-enabled systems (NVIDIA GPU):
 
 ```bash
-conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
 ```
 
 For CPU-only systems:
@@ -64,15 +62,18 @@ Verify the installation:
 uv --version
 ```
 
-### 4. Install Project Dependencies
+### 4. Install Project Dependencies and Set ENV
 
 Navigate to the project root directory (the directory containing `requirements.txt`).
 
 Install all required dependencies:
 
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
+#### ENV VARIABLES TO BE PLACED INSIDE /APP
+REVENUE_MODEL = "./app/models/regression.tabpfn_fit"
+CLASSIFICATION_MODEL = "./app/models/classification.tabpfn_fit"
 
 ### 5. Run the Backend (FastAPI)
 
